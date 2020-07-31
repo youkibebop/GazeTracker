@@ -1,0 +1,102 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+import * as tf from '@tensorflow/tfjs';
+import '@babel/polyfill';
+
+
+'use strict';
+
+var bg_model = null;
+
+function bgPredict(img_tensor){
+  if (bg_model == null){
+    console.log("background model is not valid. exiting bgPredict");
+    return;
+  }
+  console.log(img_tensor);
+  return tf.tidy(function() {
+    //extract the eye region image from a webcam stream and convert it to a tensor
+    //make a precition using the current conv. NN model
+    const prediction = bg_model.predict(img_tensor);
+    //return the results of the prediction -> XY mouse coordinates
+    return [prediction.dataSync()[0] + 0.5, prediction.dataSync()[1] + 0.5];
+    });
+}
+
+
+
+chrome.runtime.onInstalled.addListener(function() {
+  chrome.storage.sync.set({trained: 'false'}, function(){
+    console.log('The model has not been trained');
+  });
+  chrome.storage.sync.set({showCamera: true}, function() {
+    console.log('camera is now on');
+  })
+
+  chrome.storage.sync.set({modelReady: false}, function() {
+    console.log('Model is not ready for predictions.');
+  })
+  chrome.storage.sync.set({currentTensor: null}, function() {
+    console.log('Current tensor set to null.');
+  })
+  chrome.storage.sync.set({currentPrediction: null}, function() {
+    console.log('Current prediction set to null.');
+  })
+
+  chrome.storage.sync.set({extensionStarted: false}, function(){})
+
+});
+
+
+// chrome.browserAction.onClicked.addListener(buttonClicked);
+// function buttonClicked(tab){
+//   let msg = {
+//     txt:
+//   }
+//   chrome.tabs.sendMessage()
+// }
+
+
+// chrome.runtime.onMessage.addListener(
+//   function(request, sender, sendResponse) {
+//     if (request.tensor){
+//       var prediction = bgPredict(request.tensor);  
+//       var message = {X: prediction[0], Y: prediction[1] };
+//       sendResponse(message);
+//     }
+
+//   return true;
+     
+// });
+
+
+// chrome.storage.onChanged.addListener(function(changes, namespace) {
+//   for (var key in changes) {
+//     var storageChange = changes[key];
+//     if (key === "currentTensor"){
+//       var image_tensor = storageChange.newValue;
+//       var prediction = bgPredict(image_tensor);
+//       chrome.storage.sync.set({currentPrediction: prediction}, function(){});
+//       //console.log(prediction[0] + " " + prediction[1]);
+    
+//     } else if (key === "trained" && storageChange.newValue === "true"){
+//       chrome.storage.sync.set({trained: 'false'}, async function() {
+//         console.log('Loading model...');
+//         const startTime = performance.now();
+//         bg_model = await tf.loadLayersModel('localstorage://best-model');
+//         const totalTime = Math.floor(performance.now() - startTime);
+//         console.log(`Model loaded in ${totalTime}ms...`);
+//         chrome.storage.sync.set({modelReady: true}, function() {
+//           console.log("Model Ready for Predictions")
+//         });
+// 			});
+//     }
+//     // console.log('Storage key "%s" in namespace "%s" changed. ' +
+//     //             'Old value was "%s", new value is "%s".',
+//     //             key,
+//     //             namespace,
+//     //             storageChange.oldValue,
+//     //             storageChange.newValue);
+//   }
+// });
